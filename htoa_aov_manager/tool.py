@@ -19,6 +19,7 @@ if any blank or disabled aov found than will be removed.
 
 import hou
 from PySide2 import QtCore, QtWidgets, QtGui
+import json
 #from logic import process
 
 import os
@@ -134,8 +135,9 @@ class ui( QtWidgets.QDialog , process):
         
         self.tool_version = "v1.0 beta"
         
-        script_loc = os.path.abspath(os.path.dirname(__file__))
-        self.setWindowIcon(QtGui.QIcon(os.path.join(script_loc,"icon/icon.svg")));
+        self.script_loc = os.path.abspath(os.path.dirname(__file__))
+        self.checkboxes_json_path = os.path.join(self.script_loc, "checkboxes.json")
+        self.setWindowIcon(QtGui.QIcon(os.path.join(self.script_loc,"icon/icon.svg")));
         
         self.main_win_width = 400
         self.main_win_height = 600
@@ -152,6 +154,7 @@ class ui( QtWidgets.QDialog , process):
         # Set parent to Houdini's main window
         self.setParent(hou.ui.mainQtWindow(), QtCore.Qt.Dialog)
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
+        #self.loadAvailableRecords()
         
     def create_layout(self):
         # Create the main layout
@@ -183,6 +186,7 @@ class ui( QtWidgets.QDialog , process):
         self.main_tab_layout.addWidget(self.tech_box_layout)
 
         self.btn_widgets_layout = QtWidgets.QHBoxLayout()
+        self.rec_widgets_layout = QtWidgets.QHBoxLayout()
 
         self.coat_box_layout, self.coat_scroll_layout = self.child_layout( "Coat AOVs", False )
         self.sss_box_layout, self.sss_scroll_layout = self.child_layout( "SSS AOVs" , False)
@@ -194,7 +198,8 @@ class ui( QtWidgets.QDialog , process):
         
         self.main_tab.setLayout(self.main_tab_layout)
         self.extra_tab.setLayout(self.extra_tab_layout)
-        
+
+        main_layout.addLayout(self.rec_widgets_layout)
         main_layout.addWidget(self.tabs)
         main_layout.addLayout(self.btn_widgets_layout)
         
@@ -238,11 +243,20 @@ class ui( QtWidgets.QDialog , process):
         self.btn_widgets_layout.addWidget(self.ok_btn_widget, 45)
         self.btn_widgets_layout.addWidget(self.cancel_btn_widget, 45)
         self.btn_widgets_layout.addWidget(self.extender_btn_widget, 10)
+
+        self.save_btn_widget = QtWidgets.QPushButton("Save Selection")
+        self.reset_btn_widget = QtWidgets.QPushButton("Reset Records")
+        self.rec_combobox_widget = QtWidgets.QComboBox()
+        self.rec_combobox_widget.addItems( ["1", "2", "3", "4", "5"])
+        self.rec_widgets_layout.addWidget(self.save_btn_widget, 33)
+        self.rec_widgets_layout.addWidget(self.reset_btn_widget, 33)
+        self.rec_widgets_layout.addWidget(self.rec_combobox_widget, 33)
             
     def create_aovs_elements(self, aovs, scroll_layout, checked_status):
         # Add some example elements to the scroll area
         for i in aovs:
             aov_widget = QtWidgets.QCheckBox(f"{i}")
+            aov_widget.setObjectName(f"{i}")
             aov_widget.setChecked(checked_status)
             scroll_layout.addWidget(aov_widget) 
 
@@ -256,6 +270,57 @@ class ui( QtWidgets.QDialog , process):
         self.ok_btn_widget.clicked.connect( self.on_ok_btn_pressed )
         self.cancel_btn_widget.clicked.connect( self.on_cancel_btn_pressed )
         self.extender_btn_widget.clicked.connect( self.on_extender_btn_pressed )
+        
+        self.save_btn_widget.clicked.connect(self.saveCheckboxStates)
+        self.reset_btn_widget.clicked.connect(self.resetCheckboxStates)
+        self.rec_combobox_widget.currentIndexChanged.connect(self.loadCheckboxStates)
+        
+    def resetCheckboxStates(self):
+        data = {}
+        with open(self.checkboxes_json_path, 'w') as file:
+            json.dump(data, file)
+
+    def loadCheckboxStates(self):
+        state_name = self.rec_combobox_widget.currentText()
+        if state_name:
+            try:
+                children = self.tabs.findChildren(QtWidgets.QGroupBox)
+                all_yes = [ x.setChecked(True) for x in children]
+                with open(self.checkboxes_json_path, 'r') as file:
+                    data = json.load(file)
+                    states = data.get(state_name, {})
+                    for key, value in states.items():
+                        checkbox = self.tabs.findChild(QtWidgets.QCheckBox, key)
+                        if checkbox:
+                            checkbox.setChecked(value)
+            except:
+                pass
+
+    def saveCheckboxStates(self):
+        # Save the current states
+        state_name = self.rec_combobox_widget.currentText()
+        children = self.tabs.findChildren(QtWidgets.QCheckBox)
+        aovs_name = [ x.text() for x in children]
+        aovs_value = [ x.isChecked() for x in children]
+
+        if state_name:
+            try:
+                with open(self.checkboxes_json_path, 'r') as file:
+                    data = json.load(file)
+            except :
+                data={}
+        data[state_name] = dict(zip(aovs_name, aovs_value))
+        
+        # Limit to 5 states
+        if len(data) > 5:
+            data = dict(list(data.items())[-5:])
+
+        with open(self.checkboxes_json_path, 'w') as file:
+            json.dump(data, file)
+            print("Data saved successfully." + self.checkboxes_json_path)
+
+        print(f"Checkbox states for '{state_name}' saved.")
+
         
     def on_extender_btn_pressed(self):
         get_title =  self.extender_btn_widget.text() 
@@ -314,6 +379,12 @@ class ui( QtWidgets.QDialog , process):
             children = groupbox.findChildren(QtWidgets.QCheckBox)
             for child in children:
                 child.setChecked(True)
+        elif groupbox.isChecked() == False:
+            children = groupbox.findChildren(QtWidgets.QCheckBox)
+            for child in children:
+                child.setChecked(False)
+        else:
+            pass
 
 def main():
     active_windows = list_active_windows()
