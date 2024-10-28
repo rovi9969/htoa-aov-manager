@@ -4,8 +4,7 @@ Overview
 ---
 *As of version 1.0 beta, this tool will create Arnold AOVs for the checked names and transfer them to the selected Arnold ROPs.*
 
-![image description](resources/UI_01.png)
-![image description](resources/UI_02.png)
+![image description](resources/UI.jpg)
 
 ---
 
@@ -21,6 +20,9 @@ Create checked list AOVs on the selected Arnold ROP.
 3. If no Arnold ROP selected while executing then it will warn to select the Arnold ROP
 4. If the AOV is already in the ROP then it will skip that AOV in that ROP.
 5. If any blank or disabled AOV found then it will be removed.
+6. In the top section UI there is option to save the selection of aovs for future use, which can go upto 5 times and one can reset the records as well.
+
+
 
 ---
 **Script Config in Houdini**
