@@ -32,7 +32,7 @@ def list_active_windows():
     windows = [w for w in app.topLevelWidgets() if w.isWindow()]
     
     # Collect window titles and object names
-    window_info = [w for w in windows if w.windowTitle() == " HtoA AOV Manager v1.0 beta"]
+    window_info = [w for w in windows if w.windowTitle() == " HtoA AOV Manager v1.1 beta"]
     
     return window_info
 
@@ -133,13 +133,13 @@ class ui( QtWidgets.QDialog , process):
         self.sss_aovs = [ "sss_direct", "sss_indirect", "sss_direct_*", "sss_indirect_*"]
         self.other_aovs = [ "albedo", "specular_albedo", "sss_albedo", "volume_direct", "volume_indirect", "volume_direct_*", "volume_indirect_*", "sheen_direct", "sheen_indirect", "sheen_direct_*", "sheen_indirect_*", "transmission_direct", "transmission_indirect"]
         
-        self.tool_version = "v1.0 beta"
+        self.tool_version = "v1.1 beta"
         
         self.script_loc = os.path.abspath(os.path.dirname(__file__))
         self.checkboxes_json_path = os.path.join(self.script_loc, "checkboxes.json")
         self.setWindowIcon(QtGui.QIcon(os.path.join(self.script_loc,"icon/icon.svg")));
         
-        self.main_win_width = 400
+        self.main_win_width = 450
         self.main_win_height = 600
         
         self.title = " HtoA AOV Manager "+self.tool_version
@@ -154,7 +154,24 @@ class ui( QtWidgets.QDialog , process):
         # Set parent to Houdini's main window
         self.setParent(hou.ui.mainQtWindow(), QtCore.Qt.Dialog)
         self.setWindowFlags(self.windowFlags() & ~QtCore.Qt.WindowContextHelpButtonHint)
-        #self.loadAvailableRecords()
+        
+    def add_selection_list(self):
+        default_items = ["1", "2", "3", "4", "5"]
+        with open(self.checkboxes_json_path, 'r') as file:
+            data = json.load(file)
+            dict_names = data.keys()
+            if dict_names:
+                list_names = list(dict_names)
+                list_names_shorten = [x[0] for x in list_names]
+                for default_item in default_items:
+                    if default_item in list_names_shorten:
+                        pass
+                    else:
+                        list_names.append(default_item)
+            else:
+                list_names = default_items
+        list_names.sort()
+        return(list_names)
         
     def create_layout(self):
         # Create the main layout
@@ -247,13 +264,13 @@ class ui( QtWidgets.QDialog , process):
         self.save_btn_widget = QtWidgets.QPushButton("Save Selection")
         self.reset_btn_widget = QtWidgets.QPushButton("Reset Records")
         self.rec_combobox_widget = QtWidgets.QComboBox()
-        self.rec_combobox_widget.addItems( ["1", "2", "3", "4", "5"])
+        self.rec_combobox_widget.addItems( self.add_selection_list())#####
         self.rec_widgets_layout.addWidget(self.save_btn_widget, 33)
         self.rec_widgets_layout.addWidget(self.reset_btn_widget, 33)
         self.rec_widgets_layout.addWidget(self.rec_combobox_widget, 33)
+        self.loadCheckboxStates()
             
     def create_aovs_elements(self, aovs, scroll_layout, checked_status):
-        # Add some example elements to the scroll area
         for i in aovs:
             aov_widget = QtWidgets.QCheckBox(f"{i}")
             aov_widget.setObjectName(f"{i}")
@@ -261,12 +278,21 @@ class ui( QtWidgets.QDialog , process):
             scroll_layout.addWidget(aov_widget) 
 
     def create_connections(self):
+        """
         self.beauty_box_layout.clicked.connect( lambda: self.on_groupbox_pressed(self.beauty_box_layout) )
         self.shader_box_layout.clicked.connect( lambda: self.on_groupbox_pressed(self.shader_box_layout) )
         self.tech_box_layout.clicked.connect( lambda: self.on_groupbox_pressed(self.tech_box_layout) )
         self.coat_box_layout.clicked.connect( lambda: self.on_groupbox_pressed(self.coat_box_layout) )
         self.sss_box_layout.clicked.connect( lambda: self.on_groupbox_pressed(self.sss_box_layout) )
         self.other_box_layout.clicked.connect( lambda: self.on_groupbox_pressed(self.other_box_layout) )
+        """
+        self.beauty_box_layout.mousePressEvent = lambda event: self.handle_groupbox_click(event, self.beauty_box_layout)
+        self.shader_box_layout.mousePressEvent = lambda event: self.handle_groupbox_click(event, self.shader_box_layout)
+        self.tech_box_layout.mousePressEvent = lambda event: self.handle_groupbox_click(event, self.tech_box_layout)
+        self.coat_box_layout.mousePressEvent = lambda event: self.handle_groupbox_click(event, self.coat_box_layout)
+        self.sss_box_layout.mousePressEvent = lambda event: self.handle_groupbox_click(event, self.sss_box_layout)
+        self.other_box_layout.mousePressEvent = lambda event: self.handle_groupbox_click(event, self.other_box_layout)
+        
         self.ok_btn_widget.clicked.connect( self.on_ok_btn_pressed )
         self.cancel_btn_widget.clicked.connect( self.on_cancel_btn_pressed )
         self.extender_btn_widget.clicked.connect( self.on_extender_btn_pressed )
@@ -275,10 +301,24 @@ class ui( QtWidgets.QDialog , process):
         self.reset_btn_widget.clicked.connect(self.resetCheckboxStates)
         self.rec_combobox_widget.currentIndexChanged.connect(self.loadCheckboxStates)
         
+    def reset2Default(self):
+        self.on_groupbox_pressed(self.beauty_box_layout)
+        self.on_groupbox_pressed(self.shader_box_layout)
+        self.on_groupbox_pressed(self.tech_box_layout)
+        self.coat_box_layout.setChecked(False)
+        self.sss_box_layout.setChecked(False)
+        self.other_box_layout.setChecked(False)
+        self.on_groupbox_pressed(self.coat_box_layout)
+        self.on_groupbox_pressed(self.sss_box_layout)
+        self.on_groupbox_pressed(self.other_box_layout)
+        
     def resetCheckboxStates(self):
         data = {}
         with open(self.checkboxes_json_path, 'w') as file:
             json.dump(data, file)
+        self.rec_combobox_widget.clear()
+        self.rec_combobox_widget.addItems( self.add_selection_list())#####
+        self.reset2Default()
 
     def loadCheckboxStates(self):
         state_name = self.rec_combobox_widget.currentText()
@@ -289,12 +329,19 @@ class ui( QtWidgets.QDialog , process):
                 with open(self.checkboxes_json_path, 'r') as file:
                     data = json.load(file)
                     states = data.get(state_name, {})
-                    for key, value in states.items():
-                        checkbox = self.tabs.findChild(QtWidgets.QCheckBox, key)
-                        if checkbox:
-                            checkbox.setChecked(value)
+                    if states:
+                        for key, value in states.items():
+                            checkbox = self.tabs.findChild(QtWidgets.QCheckBox, key)
+                            if checkbox:
+                                checkbox.setChecked(value)
+                    else:
+                        self.reset2Default()
             except:
                 pass
+
+    def input_combo_text(self):
+        text, ok = QtWidgets.QInputDialog.getText(self, 'Input', 'Enter text:')
+        return(text)
 
     def saveCheckboxStates(self):
         # Save the current states
@@ -302,25 +349,30 @@ class ui( QtWidgets.QDialog , process):
         children = self.tabs.findChildren(QtWidgets.QCheckBox)
         aovs_name = [ x.text() for x in children]
         aovs_value = [ x.isChecked() for x in children]
-
-        if state_name:
-            try:
-                with open(self.checkboxes_json_path, 'r') as file:
-                    data = json.load(file)
-            except :
-                data={}
-        data[state_name] = dict(zip(aovs_name, aovs_value))
         
-        # Limit to 5 states
-        if len(data) > 5:
-            data = dict(list(data.items())[-5:])
-
-        with open(self.checkboxes_json_path, 'w') as file:
-            json.dump(data, file)
-            print("Data saved successfully." + self.checkboxes_json_path)
-
-        print(f"Checkbox states for '{state_name}' saved.")
-
+        value = self.input_combo_text()
+        if not value:
+            pass
+        else:
+            new_state_name = f"{state_name[0]}_{value}"
+            changed_widget = self.rec_combobox_widget.setItemText(self.rec_combobox_widget.currentIndex(), new_state_name)
+            if value:
+                try:
+                    with open(self.checkboxes_json_path, 'r') as file:
+                        data = json.load(file)
+                        if state_name in data:
+                            data.pop(state_name)
+                except :
+                    data={}
+            data[new_state_name] = dict(zip(aovs_name, aovs_value))###
+            print(data)
+            # Limit to 5 states
+            if len(data) > 5:
+                data = dict(list(data.items())[-5:])
+            with open(self.checkboxes_json_path, 'w') as file:
+                json.dump(data, file)
+                print("Data saved successfully." + self.checkboxes_json_path)
+            print(f"Checkbox states for '{state_name}' saved.")
         
     def on_extender_btn_pressed(self):
         get_title =  self.extender_btn_widget.text() 
@@ -385,6 +437,25 @@ class ui( QtWidgets.QDialog , process):
                 child.setChecked(False)
         else:
             pass
+
+    def handle_groupbox_click(self, event, groupbox):
+        if event.button() == QtCore.Qt.LeftButton:
+            if groupbox.isChecked() == False:
+                groupbox.setChecked(True)
+                self.on_groupbox_pressed(groupbox)
+            else:
+                groupbox.setChecked(False)
+                self.on_groupbox_pressed(groupbox)
+        elif event.button() == QtCore.Qt.RightButton:
+            if event.modifiers() == QtCore.Qt.ControlModifier: # print(f"Ctl + Right Click detected on checkbox: ")
+                if groupbox.isChecked() == True:
+                    children = groupbox.findChildren(QtWidgets.QCheckBox)
+                    [x.setChecked(True) for x in children]
+            else :
+                if groupbox.isChecked() == True:
+                    children = groupbox.findChildren(QtWidgets.QCheckBox)
+                    [x.setChecked(False) for x in children]
+        super(QtWidgets.QGroupBox, groupbox).mousePressEvent(event)
 
 def main():
     active_windows = list_active_windows()
