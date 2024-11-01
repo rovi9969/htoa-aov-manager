@@ -2,9 +2,9 @@
 ---
 Overview
 ---
-*As of version 1.0 beta, this tool will create Arnold AOVs for the checked names and transfer them to the selected Arnold ROPs.*
+*As of version 1.1 beta, this tool will create Arnold AOVs for the checked names and transfer them to the selected Arnold ROPs.*
 
-![image description](resources/UI.jpg)
+![image description](resources/1.1_UI.PNG)
 
 ---
 
@@ -23,7 +23,20 @@ Create checked list AOVs on the selected Arnold ROP.
 6. In the top section UI there is option to save the selection of aovs for future use, which can go upto 5 times and one can reset the records as well.
 
 
+---
 
+**Changelog:** 
+
+*version 1.1*
+
+1. Right Mouse Click action on checked section will allow all aovs  go off on that section to select fewer item faster & Right Mouse Click + Control will check all aovs of checked section.
+
+2. Save Selection , added input action to give name to selection set. 
+
+3. Unchanged selection set will default the ticked options. 
+
+4. Reset will properly revert all changes to default.
+   
 ---
 **Script Config in Houdini**
 
