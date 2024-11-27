@@ -8,6 +8,8 @@ Copy AOVs from one Arnold ROP to multiple selected ROPs.*
 
 ![image description](resources/1.1_UI.PNG)
 
+![image description](resources/1.2_Copy_AOVs.PNG)
+
 ---
 
 **Main feature**:
