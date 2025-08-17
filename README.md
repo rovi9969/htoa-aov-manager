@@ -66,5 +66,5 @@ i.e. *C:/Users/<username>/Documents/houdini{version}/scripts/python/*
   import importlib
   from htoa_aov_manager import tool
   importlib.reload(tool)
-  tool.main().
+  tool.main()
   ```
